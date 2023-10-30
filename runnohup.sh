@@ -1,0 +1,1 @@
+nohup python webdb.py --from_pretrained /home/saiwanming/models/cogvlm-chat --version chat  --english --bf16 > app1.log 2>&1 &

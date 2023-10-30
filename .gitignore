@@ -9,3 +9,5 @@ examples/*grounding.png
 archive*
 hostfile
 runs/
+*.log
+CogVLM.code-workspace
