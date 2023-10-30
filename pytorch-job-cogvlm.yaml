@@ -1,0 +1,121 @@
+apiVersion: "kubeflow.org/v1"
+kind: "PyTorchJob"
+metadata:
+  name: "pytorch-job-cogvlm"
+  namespace: "kubeflow-app"
+spec:
+  pytorchReplicaSpecs:
+    Master:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          #hostNetwork: true
+          volumes:
+          - hostPath:
+              path: /pfs/sshare/app
+              type: Directory
+            name: pfs-volume
+          - emptyDir:
+              medium: Memory
+              sizeLimit: 200Gi
+            name: sugaku-volume
+          schedulerName: volcano
+          containers:
+            - name: pytorch
+              image: ccr-276x7ilk-vpc.cnc.bj.baidubce.com/ai/cogvlm:cuda11.7-wandb
+              imagePullPolicy: Always
+              workingDir: /pfs/sshare/app/saiwanming/CogVLM
+              command: ["bash","-c"]
+              args:
+                - |
+                  python webdb.py \
+                  --from_pretrained=/pfs/sshare/app/saiwanming/models/cogvlm-chat \
+                  --version chat \
+                  --english \
+                  --bf16 
+              env:
+                - name: NCCL_IB_DISABLE
+                  value: "0"
+                - name: NCCL_DEBUG
+                  value: "INFO"
+                # - name: NCCL_DEBUG_SUBSYS
+                #   value: "ALL"
+                - name: WANDB_API_KEY
+                  # xujianbo-wandb
+                  value: "2004630b97157ba54346d1f5e39fddd7b08d0b31"
+              securityContext:
+                privileged: true
+                capabilities:
+                  add: [ "IPC_LOCK" ]
+              resources: 
+                limits:
+                  cpu: 48
+                  memory: 480Gi
+                  nvidia.com/gpu: 8
+                  rdma/hca : 1
+              volumeMounts:
+              - mountPath: /pfs/sshare/app
+                name: pfs-volume
+              - mountPath: /dev/shm
+                name: sugaku-volume
+    Worker:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          #hostNetwork: true
+          volumes:
+          - hostPath:
+              path: /pfs/sshare/app
+              type: Directory
+            name: pfs-volume
+          - emptyDir:
+              medium: Memory
+              sizeLimit: 200Gi
+            name: sugaku-volume
+          schedulerName: volcano
+          containers: 
+            - name: pytorch
+              image: ccr-276x7ilk-vpc.cnc.bj.baidubce.com/ai/cogvlm:cuda11.7-wandb
+              imagePullPolicy: Always
+              workingDir: /pfs/sshare/app/saiwanming/CogVLM
+              command: ["bash","-c"]
+              args:
+                - |
+                  python webdb.py \
+                  --from_pretrained=/pfs/sshare/app/saiwanming/models/cogvlm-chat \
+                  --version chat \
+                  --english \
+                  --bf16 
+              env:
+                - name: NCCL_IB_DISABLE
+                  value: "0"
+                - name: NCCL_DEBUG
+                  value: "INFO"
+                # - name: NCCL_DEBUG_SUBSYS
+                #   value: "ALL"
+                - name: WANDB_API_KEY
+                  # xujianbo-wandb
+                  value: "2004630b97157ba54346d1f5e39fddd7b08d0b31"
+              securityContext:
+                privileged: true
+                capabilities:
+                  add: [ "IPC_LOCK" ]
+              resources: 
+                limits:
+                  cpu: 48
+                  memory: 480Gi
+                  nvidia.com/gpu: 8
+                  rdma/hca : 1
+              volumeMounts:
+              - mountPath: /pfs/sshare/app/
+                name: pfs-volume
+              - mountPath: /dev/shm
+                name: sugaku-volume

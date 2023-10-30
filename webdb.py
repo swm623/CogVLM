@@ -56,7 +56,7 @@ class LaionDataset:
         world_size = int(os.environ.get('WORLD_SIZE', 1))
         # load model
         self.model, self.model_args = CogVLMModel.from_pretrained(
-            '/home/saiwanming/models/cogvlm-chat',
+            args.from_pretrained,
             args=argparse.Namespace(
             deepspeed=None,
             local_rank=rank,
@@ -126,6 +126,7 @@ class LaionDataset:
         total_data = 100
         rank = int(os.environ.get('RANK', 0))
         world_size = int(os.environ.get('WORLD_SIZE', 1))        
+        print_all(f"rank {rank}  world_size {world_size}")
         # 计算每个进程的数据范围
         data_per_process = total_data // world_size  # 每个进程平均处理的数据量
         remainder = total_data % world_size  # 余下的数据
