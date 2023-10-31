@@ -19,8 +19,6 @@ from utils.vision import get_image_processor
 from sat.helpers import print_all
 import logging
 class LaionDataset:
-    source_path = '/ML-A100/sshare-app/yanjinbing/laion-high-aesthetics_6'
-    target_path = '/ML-A100/sshare-app/saiwanming/laion-high-resolution-output/'
     def __init__(self) -> None:
         self.prompt = """
     Describe this image
@@ -43,10 +41,18 @@ class LaionDataset:
         parser.add_argument("--no_prompt", action='store_true', help='Sometimes there is no prompt in stage 1')
         parser.add_argument("--fp16", action="store_true")
         parser.add_argument("--bf16", action="store_true")
-        args = parser.parse_args()
+        parser.add_argument("--self_world_size", type=int, default=1, help='world_size')      
+        parser.add_argument("--self_rank", type=int, default=0, help='rank')       
+        parser.add_argument("--self_local_rank", type=int, default=0, help='local_rank')     
+        parser.add_argument("--source_path", type=str, default='/ML-A100/sshare-app/yanjinbing/laion-high-aesthetics_6', help='pretrained ckpt')  
+        parser.add_argument("--target_path", type=str, default='/ML-A100/sshare-app/saiwanming/laion-high-resolution-output/', help='pretrained ckpt')
+        self.args = parser.parse_args()
         parser = CogVLMModel.add_model_specific_args(parser)
-        args = parser.parse_args()
-        print_all(args)
+        self.args = parser.parse_args()
+
+        print_all(self.args)
+        self.source_path = self.args.source_path
+        self.target_path = self.args.target_path
         self.max_length = 2048
         self.top_p = 0.4
         self.top_k = 1
@@ -54,9 +60,12 @@ class LaionDataset:
         self.no_prompt = None
         rank = int(os.environ.get('RANK', 0))
         world_size = int(os.environ.get('WORLD_SIZE', 1))
+        self_local_rank = self.args.self_local_rank
+        torch.cuda.set_device(self_local_rank)
+        self.device = torch.device('cuda:{:d}'.format(self_local_rank))
         # load model
         self.model, self.model_args = CogVLMModel.from_pretrained(
-            args.from_pretrained,
+            self.args.from_pretrained,
             args=argparse.Namespace(
             deepspeed=None,
             local_rank=rank,
@@ -66,9 +75,10 @@ class LaionDataset:
             mode='inference',
             skip_init=True,
             use_gpu_initialization=True if torch.cuda.is_available() else False,
-            device='cuda',
-            **vars(args)
+            device='cuda:{:d}'.format(self_local_rank),
+            **vars(self.args)
         ), overwrite_args={'model_parallel_size': world_size} if world_size != 1 else {})
+        self.model = self.model.to(self.device)
         self.model = self.model.eval()
         from sat.mpu import get_model_parallel_world_size
         assert world_size == get_model_parallel_world_size(), "world size must equal to model parallel size for cli_demo!"
@@ -124,8 +134,8 @@ class LaionDataset:
         return count
     def run(self):
         total_data = 100
-        rank = int(os.environ.get('RANK', 0))
-        world_size = int(os.environ.get('WORLD_SIZE', 1))        
+        rank = self.args.self_rank
+        world_size = self.args.self_world_size     
         print_all(f"rank {rank}  world_size {world_size}")
         # 计算每个进程的数据范围
         data_per_process = total_data // world_size  # 每个进程平均处理的数据量
