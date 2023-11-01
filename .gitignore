@@ -11,3 +11,4 @@ hostfile
 runs/
 *.log
 CogVLM.code-workspace
+ckpts/

@@ -50,13 +50,18 @@ class ImageProcess():
     def process(self, image_src, **kwarg):
         # bucket is dict:  {"idx": idx,  "size": (h, w) }
         # where (h, w) is 64 stepped and w * h is about 1024*1024
-        def_size = {}  # {"size": (L, L)}
+        L = self.resolution
+        def_size ={"size": (L, L)}
+    
         bucket = kwarg.get('bucket', def_size)
+
+        if bucket is None:
+            bucket = def_size
 
         if image_src.dtype == np.float32:
             image_src = (image_src * 255).astype(np.uint8)
 
-        L = self.resolution
+
         H, W, C = image_src.shape
         # print(image_src.shape, image_src.dtype)
         original_size = torch.tensor((H, W), dtype=torch.long)

@@ -68,13 +68,22 @@ def _wds_map_fun(sample: dict, image_proc_fun, trace_id=False):
             sample['image'], key=sample['__key__'], meta=sample.get('json'), bucket=sample.get('bucket'))
         r.update(
             {"image": image, "size_of_original_crop_target": size_of_original_crop_target})
+    r['key'] = sample['__key__']
 
     if 'prompt_embeds' not in r:
         # should do text_encoding online, retrieve from text or json
         if 'txt' in sample:
             r['text'] = _normalize_caption(sample['txt'])
+            if "recaption" in sample['json']:
+                r['recaption'] = _normalize_caption(sample['json']['recaption'] )
+            else:
+                r['recaption'] = r['text']              
         elif 'json' in sample:
             r['text'] = sample['json']['caption']
+            if "recaption" in sample['json']:
+                r['recaption'] = _normalize_caption(sample['json']['recaption'])
+            else:
+                r['recaption'] = r['text']           
 
     if trace_id:
         logger.info(os.getpid(), sample["__key__"])
@@ -171,7 +180,7 @@ def load_webdataset(datafiles, resolution, num_samples, num_workers, seed, batch
         if _num_workers > len(datafiles):
             num_workers = _num_workers = len(datafiles)
         pipeline.extend([
-            wds.shardlists.split_by_worker,
+            #wds.shardlists.split_by_worker,
             wds.tarfile_to_samples(),
         ])
 
@@ -180,14 +189,16 @@ def load_webdataset(datafiles, resolution, num_samples, num_workers, seed, batch
         wds.decode("rgb8", handler=log_and_continue),
         wds.rename(image="jpg;png;jpeg;webp"),
         # wds.select(filter_samples_by_content_fn),
-        AspectRatioBucketBatcher(
-            batch_size=batch_size,  
-            image_size_base=resolution,
-            # 1024 -> 64 
-            image_size_step=resolution//16,
-            image_key='image', 
-            filter_param=image_filter_param
-        ),
+
+        # AspectRatioBucketBatcher(
+        #     batch_size=batch_size,  
+        #     image_size_base=resolution,
+        #     # 1024 -> 64 
+        #     image_size_step=resolution//16,
+        #     image_key='image', 
+        #     filter_param=image_filter_param
+        # ),
+
         wds.map(preprocessor_fn),
         # wds.to_tuple("image", "size_of_original_crop_target", "text"),
         # wds.batched(batch_size, partial=False)

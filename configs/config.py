@@ -20,7 +20,7 @@ elif image_size == 512:
     batch_size = 8
 elif image_size == 1024:  # multi aspect ratio
     # use 2 for 2.6B, or use 8 for 1.3B model
-    batch_size = 2
+    batch_size = 1
     noise_offset = 0.05  # only add when image_size=1024
 
 world_size = num_gpus
@@ -97,7 +97,8 @@ else:
     # 
     # laion-high-aesthetics_6 is subset of laion-high-resolution-output with aesthetics > 6. about 17.4w
     train_data_dir = '/ML-A100/sshare-app/yanjinbing/laion-high-aesthetics_6/{000..089}.tar'
-    test_data_dir = '/ML-A100/sshare-app/yanjinbing/laion-high-aesthetics_6/{090..101}.tar'
+    #test_data_dir = '/ML-A100/sshare-app/yanjinbing/laion-high-aesthetics_6/{090..101}.tar'
+    test_data_dir ='/ML-A100/sshare-app/saiwanming/workdir/data/laion-high/000.tar'
 
 test_data_size = 128
 
@@ -111,4 +112,4 @@ image_filter_param = {
 
 ###############ImageProcessing#####################
 resolution = image_size
-random_crop = True
+random_crop = False

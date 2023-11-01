@@ -1,6 +1,6 @@
 import os
 import time
-
+import csv
 import torch
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
@@ -72,7 +72,7 @@ class TrainProcess:
         self.test_loader = load_webdataset(opt.test_data_dir,
                                                num_samples=opt.test_data_size,
                                                resolution=opt.resolution,
-                                               num_workers=2,
+                                               num_workers=1,
                                                batch_size=opt.batch_size,
                                                world_size=opt.world_size,
                                                image_filter_param=opt.image_filter_param,
@@ -146,7 +146,7 @@ class TrainProcess:
             if 'optim' in checkpoint:
                 self.optim.load_state_dict(checkpoint['optim'])
         return
-    def calc_loss(self, model, batch):
+    def calc_loss(self, model, batch, text_field,timesteps,noise):
         opt = self.opt
 
         # upload to gpu
@@ -158,21 +158,12 @@ class TrainProcess:
 
         # do vae and text_encoder here
         x = self.vae(image)
-        t = self.text_encoder(batch['text'])
+        t = self.text_encoder(batch[text_field])
 
         B, C, H, W = x.shape
-        noise = torch.randn_like(x)
-        if 'noise_offset' in opt and opt.noise_offset:
-            # https://www.crosslabs.org//blog/diffusion-with-offset-noise
-            noise += opt.noise_offset * \
-                torch.randn((B, C, 1, 1), device=x.device)
 
         unet_added_conditions = {"time_ids": time_ids,
                                  "text_embeds": t['pooled_prompt_embeds']}
-
-        # Sample a random timestep for each image
-        timesteps = torch.randint(
-            0, opt.timesteps, (B,), device=x.device).long()
 
         # Add noise to the model input according to the noise magnitude at each timestep
         # (this is the forward diffusion process)
@@ -213,19 +204,35 @@ class TrainProcess:
         self.model.eval()
 
         t0 = time.time()
-        cnt, loss_sum = 0, 0
-        for mb in self.test_loader:
-            # mb = self.preprocess(mb)
-            # # pred_batch return avg loss for batch
-            # loss_sum += self.pred_batch(mb) * mb['latent'].shape[0]
-            loss_sum += self.calc_loss(self.model, mb) * mb['image'].shape[0]
-            cnt += mb['image'].shape[0]
-
-        loss = loss_sum / cnt
+        cnt, loss1_sum , loss2_sum= 0, 0,0
+        fieldnames = ['key', 'loss1',"loss2", "caption", "recaption"]
+        with open('data/test.csv', 'w', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for mb in self.test_loader:
+                # mb = self.preprocess(mb)
+                # # pred_batch return avg loss for batch
+                # loss_sum += self.pred_batch(mb) * mb['latent'].shape[0]
+                # Sample a random timestep for each image
+                noise = torch.randn_like(torch.zeros([1,4,128,128], dtype=self.dtype, device=self.device),device=self.device)
+                if 'noise_offset' in self.opt and self.opt.noise_offset:
+                # https://www.crosslabs.org//blog/diffusion-with-offset-noise
+                    noise += self.opt.noise_offset * \
+                    torch.randn((1, 4, 1, 1), device=self.device)
+                timesteps = torch.randint(0, 1000, (1,), device=self.device).long()
+                loss1 = self.calc_loss(self.model, mb,"text",timesteps,noise) * mb['image'].shape[0]
+                loss2 = self.calc_loss(self.model, mb,"recaption",timesteps,noise) * mb['image'].shape[0]
+                loss1_sum += loss1
+                loss2_sum += loss2
+                cnt += mb['image'].shape[0]
+                row = {"key":mb['key'][0], "loss1":loss1.item(),"loss2":loss2.item(), "caption": mb["text"][0],"recaption": mb["recaption"][0]}
+                writer.writerow(row)
+        loss1 = loss1_sum / cnt
+        loss2 = loss2_sum / cnt        
         speed = cnt / (time.time() - t0)
-        print(f'===num_test_images={cnt}  speed={speed:.2f}imgs/s loss={loss_sum / cnt:0.4f} ')
-        self.sw.add_scalar("test/loss", loss, step)
+        print(f'===num_test_images={cnt}  speed={speed:.2f}imgs/s loss1={loss1_sum / cnt:0.4f}  loss2={loss2_sum / cnt:0.4f}')
+        self.sw.add_scalar("test/loss", loss1, step)
         self.sw.add_scalar("test/speed", speed, step)
-        return loss
+        return loss1, loss2
 
  
