@@ -13,15 +13,16 @@
             "justMyCode": false,
             "args": [
                 "--from_pretrained",
-                "/home/saiwanming/models/cogvlm-chat",
+                "/ML-A100/sshare-app/saiwanming/models/cogvlm-chat",
                 "--version", 
                 "chat",
                 "--english",
                 "--bf16",
                 "--self_local_rank",
                 "0",
-            ],
-            "env": {"CUDA_VISIBLE_DEVICES":"7"}
+                "--self_world_size",
+                "8"
+            ]
         },
         {
             "name": "Python: no args",

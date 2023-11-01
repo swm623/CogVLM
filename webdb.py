@@ -61,7 +61,7 @@ class LaionDataset:
         rank = int(os.environ.get('RANK', 0))
         world_size = int(os.environ.get('WORLD_SIZE', 1))
         self_local_rank = self.args.self_local_rank
-        #torch.cuda.set_device(self_local_rank)
+        torch.cuda.set_device(rank)
         self.device = torch.device('cuda:{:d}'.format(self_local_rank))
         print(torch.cuda.current_device())
         # load model
@@ -76,10 +76,10 @@ class LaionDataset:
             mode='inference',
             skip_init=True,
             use_gpu_initialization=True if torch.cuda.is_available() else False,
-            device='cuda:{:d}'.format(self_local_rank),
+            device='cuda',
             **vars(self.args)
         ), overwrite_args={'model_parallel_size': world_size} if world_size != 1 else {})
-        self.model = self.model.to(self.device)
+        #self.model = self.model.to(self.device)
         self.model = self.model.eval()
         from sat.mpu import get_model_parallel_world_size
         assert world_size == get_model_parallel_world_size(), "world size must equal to model parallel size for cli_demo!"
