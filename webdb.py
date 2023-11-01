@@ -22,15 +22,10 @@ class LaionDataset:
     def __init__(self) -> None:
         self.prompt = """
     Describe this image
-
-    Here are a few things to keep in mind when describing the content of an image in detail:
-    Provide enough contextual information for the model to understand the key features of the image.
-    Use clear, concise language to describe the image and avoid lengthy and unnecessary descriptions.
-    Describe the elements in the image in a logical and spatial order so that readers can easily follow the description to understand the image.
     Be sure to stick to the 70-word limit to keep descriptions concise.
         """
         parser = argparse.ArgumentParser()
-        parser.add_argument("--max_length", type=int, default=1024, help='max length of the total sequence')
+        parser.add_argument("--max_length", type=int, default=2048, help='max length of the total sequence')
         parser.add_argument("--top_p", type=float, default=0.4, help='top p for nucleus sampling')
         parser.add_argument("--top_k", type=int, default=1, help='top k for top k sampling')
         parser.add_argument("--temperature", type=float, default=.8, help='temperature for sampling')
