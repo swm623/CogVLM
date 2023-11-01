@@ -17,8 +17,11 @@
                 "--version", 
                 "chat",
                 "--english",
-                "--bf16"
-            ]
+                "--bf16",
+                "--self_local_rank",
+                "0",
+            ],
+            "env": {"CUDA_VISIBLE_DEVICES":"7"}
         },
         {
             "name": "Python: no args",

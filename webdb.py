@@ -30,7 +30,7 @@ class LaionDataset:
     Be sure to stick to the 70-word limit to keep descriptions concise.
         """
         parser = argparse.ArgumentParser()
-        parser.add_argument("--max_length", type=int, default=2048, help='max length of the total sequence')
+        parser.add_argument("--max_length", type=int, default=1024, help='max length of the total sequence')
         parser.add_argument("--top_p", type=float, default=0.4, help='top p for nucleus sampling')
         parser.add_argument("--top_k", type=int, default=1, help='top k for top k sampling')
         parser.add_argument("--temperature", type=float, default=.8, help='temperature for sampling')
@@ -45,7 +45,7 @@ class LaionDataset:
         parser.add_argument("--self_rank", type=int, default=0, help='rank')       
         parser.add_argument("--self_local_rank", type=int, default=0, help='local_rank')     
         parser.add_argument("--source_path", type=str, default='/ML-A100/sshare-app/yanjinbing/laion-high-aesthetics_6', help='pretrained ckpt')  
-        parser.add_argument("--target_path", type=str, default='/ML-A100/sshare-app/saiwanming/laion-high-resolution-output/', help='pretrained ckpt')
+        parser.add_argument("--target_path", type=str, default='/ML-A100/sshare-app/swmall/data/laion-high-aesthetics_6_recaption', help='pretrained ckpt')
         self.args = parser.parse_args()
         parser = CogVLMModel.add_model_specific_args(parser)
         self.args = parser.parse_args()
@@ -53,16 +53,17 @@ class LaionDataset:
         print_all(self.args)
         self.source_path = self.args.source_path
         self.target_path = self.args.target_path
-        self.max_length = 2048
-        self.top_p = 0.4
-        self.top_k = 1
-        self.temperature = 0.8
+        self.max_length = self.args.max_length
+        self.top_p = self.args.top_p
+        self.top_k = self.args.top_k
+        self.temperature = self.args.temperature
         self.no_prompt = None
         rank = int(os.environ.get('RANK', 0))
         world_size = int(os.environ.get('WORLD_SIZE', 1))
         self_local_rank = self.args.self_local_rank
-        torch.cuda.set_device(self_local_rank)
+        #torch.cuda.set_device(self_local_rank)
         self.device = torch.device('cuda:{:d}'.format(self_local_rank))
+        print(torch.cuda.current_device())
         # load model
         self.model, self.model_args = CogVLMModel.from_pretrained(
             self.args.from_pretrained,
