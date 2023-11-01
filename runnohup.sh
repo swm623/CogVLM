@@ -1,1 +1,1 @@
-nohup python webdb.py --from_pretrained /ML-A100/sshare-app/saiwanming/models/cogvlm-chat --version chat  --english --bf16 > app1.log 2>&1 &
+nohup  CUDA_VISIBLE_DEVICES=7  python webdb.py --from_pretrained /ML-A100/sshare-app/saiwanming/models/cogvlm-chat --self_rank 0 --self_world_size 1 --version chat  --english --bf16 > app1.log 2>&1 &
