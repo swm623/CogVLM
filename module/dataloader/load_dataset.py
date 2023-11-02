@@ -180,7 +180,7 @@ def load_webdataset(datafiles, resolution, num_samples, num_workers, seed, batch
         if _num_workers > len(datafiles):
             num_workers = _num_workers = len(datafiles)
         pipeline.extend([
-            #wds.shardlists.split_by_worker,
+            wds.shardlists.split_by_worker,
             wds.tarfile_to_samples(),
         ])
 
@@ -190,14 +190,14 @@ def load_webdataset(datafiles, resolution, num_samples, num_workers, seed, batch
         wds.rename(image="jpg;png;jpeg;webp"),
         # wds.select(filter_samples_by_content_fn),
 
-        # AspectRatioBucketBatcher(
-        #     batch_size=batch_size,  
-        #     image_size_base=resolution,
-        #     # 1024 -> 64 
-        #     image_size_step=resolution//16,
-        #     image_key='image', 
-        #     filter_param=image_filter_param
-        # ),
+        AspectRatioBucketBatcher(
+            batch_size=batch_size,  
+            image_size_base=resolution,
+            # 1024 -> 64 
+            image_size_step=resolution//16,
+            image_key='image', 
+            filter_param=image_filter_param
+        ),
 
         wds.map(preprocessor_fn),
         # wds.to_tuple("image", "size_of_original_crop_target", "text"),
