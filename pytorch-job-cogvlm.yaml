@@ -32,7 +32,7 @@ spec:
               command: ["bash","-c"]
               args:
                 - |
-                  python webdb.py \
+                  python3 webdb.py \
                   --from_pretrained=/pfs/sshare/app/saiwanming/models/cogvlm-chat \
                   --version chat \
                   --english \
@@ -53,9 +53,9 @@ spec:
                   add: [ "IPC_LOCK" ]
               resources: 
                 limits:
-                  cpu: 4
-                  memory: 16Gi
-                  nvidia.com/gpu: 1
+                  cpu: 48
+                  memory: 480Gi
+                  nvidia.com/gpu: 8
                   rdma/hca : 1
               volumeMounts:
               - mountPath: /pfs/sshare/app
@@ -63,7 +63,7 @@ spec:
               - mountPath: /dev/shm
                 name: sugaku-volume
     Worker:
-      replicas: 16
+      replicas: 1
       restartPolicy: Never
       template:
         metadata:
@@ -89,7 +89,7 @@ spec:
               command: ["bash","-c"]
               args:
                 - |
-                  python webdb.py \
+                  python3 webdb.py \
                   --from_pretrained=/pfs/sshare/app/saiwanming/models/cogvlm-chat \
                   --version chat \
                   --english \
@@ -110,9 +110,9 @@ spec:
                   add: [ "IPC_LOCK" ]
               resources: 
                 limits:
-                  cpu: 4
-                  memory: 16Gi
-                  nvidia.com/gpu: 1
+                  cpu: 48
+                  memory: 480Gi
+                  nvidia.com/gpu: 8
                   rdma/hca : 1
               volumeMounts:
               - mountPath: /pfs/sshare/app/

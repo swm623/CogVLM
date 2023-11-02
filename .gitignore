@@ -12,3 +12,4 @@ runs/
 *.log
 CogVLM.code-workspace
 ckpts/
+cogvlm.tar
