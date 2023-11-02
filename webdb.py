@@ -90,7 +90,7 @@ class LaionDataset:
         from sat.mpu import get_model_parallel_world_size
         assert world_size == get_model_parallel_world_size(), "world size must equal to model parallel size for cli_demo!"
 
-        self.tokenizer = llama2_tokenizer('lmsys/vicuna-7b-v1.5', signal_type='chat')
+        self.tokenizer = llama2_tokenizer(self.args.local_tokenizer, signal_type='chat')
         self.image_processor = get_image_processor(self.model_args.eva_args["image_size"][0])
 
         self.model.add_mixin('auto-regressive', CachedAutoregressiveMixin())
