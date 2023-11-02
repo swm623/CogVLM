@@ -65,7 +65,9 @@ class LaionDataset:
             self.self_world_size  = world_size
             self.self_rank = rank
 
-        
+        print_all(f"self_local_rank {self_local_rank}")
+        print_all(f"self_world_size {self_world_size}")    
+        print_all(f"self_rank {self_rank}")                     
         #torch.cuda.set_device(rank)
         #self.device = torch.device('cuda:{:d}'.format(self_local_rank))
         print_all(f"current_device {torch.cuda.current_device()}")
