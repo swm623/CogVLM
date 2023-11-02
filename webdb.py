@@ -39,8 +39,9 @@ class LaionDataset:
         parser.add_argument("--self_world_size", type=int, default=1, help='world_size')      
         parser.add_argument("--self_rank", type=int, default=0, help='rank')       
         parser.add_argument("--self_local_rank", type=int, default=0, help='local_rank')     
-        parser.add_argument("--source_path", type=str, default='/ML-A100/sshare-app/yanjinbing/laion-high-aesthetics_6', help='pretrained ckpt')  
-        parser.add_argument("--target_path", type=str, default='/ML-A100/sshare-app/swmall/data/laion-high-aesthetics_6_recaption', help='pretrained ckpt')
+        parser.add_argument("--source_path", type=str, default='/ML-A100/sshare-app/yanjinbing/laion-high-aesthetics_6', help='source_path')  
+        parser.add_argument("--target_path", type=str, default='/ML-A100/sshare-app/swmall/data/test/laion-high', help='target_path')
+        parser.add_argument("--run_mode", type=str, default='python', help='run_mode')        
         self.args = parser.parse_args()
         parser = CogVLMModel.add_model_specific_args(parser)
         self.args = parser.parse_args()
@@ -54,11 +55,20 @@ class LaionDataset:
         self.temperature = self.args.temperature
         self.no_prompt = None
         rank = int(os.environ.get('RANK', 0))
+        local_rank =  int(os.environ.get('LOCAL_RANK', 0))
         world_size = int(os.environ.get('WORLD_SIZE', 1))
-        self_local_rank = self.args.self_local_rank
-        torch.cuda.set_device(rank)
-        self.device = torch.device('cuda:{:d}'.format(self_local_rank))
-        print(torch.cuda.current_device())
+        self.self_local_rank = self.args.self_local_rank
+        self.self_rank = self.args.self_rank
+        self.self_world_size = self.args.self_world_size            
+        if self.args.run_mode != "python":
+            self.self_local_rank = local_rank
+            self.self_world_size  = world_size
+            self.self_rank = rank
+
+        
+        #torch.cuda.set_device(rank)
+        #self.device = torch.device('cuda:{:d}'.format(self_local_rank))
+        print_all(f"current_device {torch.cuda.current_device()}")
         # load model
         self.model, self.model_args = CogVLMModel.from_pretrained(
             self.args.from_pretrained,
@@ -74,7 +84,6 @@ class LaionDataset:
             device='cuda',
             **vars(self.args)
         ), overwrite_args={'model_parallel_size': world_size} if world_size != 1 else {})
-        #self.model = self.model.to(self.device)
         self.model = self.model.eval()
         from sat.mpu import get_model_parallel_world_size
         assert world_size == get_model_parallel_world_size(), "world size must equal to model parallel size for cli_demo!"
@@ -94,7 +103,14 @@ class LaionDataset:
         target_file = os.path.join(self.target_path , d_no + ".tar")
         count = 0
         print_all(f"{source_files} --> {target_file}")
-        dataset = wds.WebDataset(source_files).decode('pil')
+        #dataset = wds.WebDataset(source_files).decode('pil')
+
+        pipeline = [
+            wds.SimpleShardList(source_files),
+            wds.tarfile_to_samples(),
+            wds.decode('pil')
+        ]
+        dataset = wds.DataPipeline(*pipeline)
         with wds.TarWriter(target_file) as out_stream:
             for sample in dataset:
                 jpg = sample['jpg']
@@ -130,8 +146,8 @@ class LaionDataset:
         return count
     def run(self):
         total_data = 100
-        rank = self.args.self_rank
-        world_size = self.args.self_world_size     
+        rank = self.self_rank
+        world_size = self.self_world_size     
         print_all(f"rank {rank}  world_size {world_size}")
         # 计算每个进程的数据范围
         data_per_process = total_data // world_size  # 每个进程平均处理的数据量

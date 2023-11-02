@@ -21,7 +21,9 @@
                 "--self_local_rank",
                 "0",
                 "--self_world_size",
-                "8"
+                "8",
+                "--target_path",
+                "/ML-A100/sshare-app/swmall/data/test/laion-high"
             ]
         },
         {
