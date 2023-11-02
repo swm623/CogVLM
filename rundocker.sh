@@ -1,4 +1,4 @@
-torchrun --nnodes=${WORLD_SIZE} --nproc-per-node=8 \
+torchrun --nnodes=${WORLD_SIZE} --nproc-per-node=2 \
                   --node-rank=${RANK} \
                   --master-addr=${MASTER_ADDR} \
                   --master-port=${MASTER_PORT} \
